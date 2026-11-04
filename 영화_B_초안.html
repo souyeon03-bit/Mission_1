@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>나의 영화 티어리스트</title>
+<style>
+  :root {
+    --bg: #101116;
+    --panel: #191b24;
+    --panel-2: #20232e;
+    --text: #f4f4f7;
+    --muted: #9699a8;
+    --line: #303341;
+    --accent: #a78bfa;
+    --accent-2: #7c5ce7;
+    --shadow: 0 14px 40px rgba(0,0,0,.22);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; color: var(--text);
+    background: radial-gradient(ellipse at 15% 0%, #29213f 0, transparent 35%), var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+  }
+  .wrap { width: min(960px, calc(100% - 36px)); margin: 0 auto; padding: 48px 0 64px; }
+  header { display:flex; justify-content:space-between; align-items:flex-end; gap:20px; margin-bottom:28px; }
+  .eyebrow { color:var(--accent); font-size:12px; font-weight:800; letter-spacing:.16em; margin-bottom:10px; }
+  h1 { margin:0; font-size:clamp(28px, 5vw, 42px); letter-spacing:-.055em; }
+  .subtitle { color:var(--muted); margin:10px 0 0; font-size:14px; }
+  .count-pill { border:1px solid var(--line); background:rgba(255,255,255,.04); padding:9px 13px; border-radius:999px; color:#c8c6d3; font-size:13px; white-space:nowrap; }
+  .composer { display:flex; gap:10px; padding:14px; background:rgba(25,27,36,.92); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); margin-bottom:24px; }
+  input { min-width:0; flex:1; color:var(--text); background:#11131a; border:1px solid #353847; border-radius:11px; padding:14px 15px; font-size:15px; outline:none; }
+  input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(167,139,250,.14); }
+  button { border:0; cursor:pointer; font:inherit; transition:transform .15s, opacity .15s, background .15s; }
+  button:active { transform:scale(.97); }
+  .add-btn { background:var(--accent); color:#171322; font-weight:800; border-radius:11px; padding:0 22px; }
+  .add-btn:hover { background:#b9a4ff; }
+  .tiers { display:flex; flex-direction:column; gap:13px; }
+  .tier { display:grid; grid-template-columns:150px 1fr; min-height:112px; border:1px solid var(--line); background:rgba(25,27,36,.86); border-radius:17px; overflow:hidden; box-shadow:0 7px 22px rgba(0,0,0,.12); }
+  .tier-label { display:flex; flex-direction:column; justify-content:center; padding:20px; border-right:1px solid var(--line); background:rgba(255,255,255,.018); }
+  .tier-label strong { font-size:17px; letter-spacing:-.04em; }
+  .tier-label span { margin-top:6px; color:var(--muted); font-size:12px; }
+  .tier-content { padding:15px; display:flex; align-content:center; align-items:center; flex-wrap:wrap; gap:9px; min-width:0; }
+  .movie { display:flex; align-items:center; gap:9px; padding:9px 9px 9px 13px; border:1px solid #383b4a; background:var(--panel-2); border-radius:12px; min-width:0; max-width:100%; }
+  .movie-title { font-size:14px; font-weight:650; overflow-wrap:anywhere; }
+  .movie-actions { display:flex; gap:5px; align-items:center; flex-shrink:0; }
+  .move-select { color:#ddd8f5; background:#303044; border:1px solid #48435f; border-radius:8px; padding:6px 7px; font-size:11px; max-width:91px; outline:none; cursor:pointer; }
+  .delete-btn { color:#a7a8b4; background:transparent; border-radius:7px; width:26px; height:27px; font-size:17px; line-height:1; }
+  .delete-btn:hover { color:#ff858e; background:rgba(255,100,120,.1); }
+  .empty { color:#737787; font-size:13px; padding:8px 4px; }
+  .tier[data-tier="life"] .tier-label { box-shadow:inset 4px 0 #f4c96b; }
+  .tier[data-tier="fun"] .tier-label { box-shadow:inset 4px 0 #8ee0bd; }
+  .tier[data-tier="okay"] .tier-label { box-shadow:inset 4px 0 #83b8f5; }
+  .tier[data-tier="bad"] .tier-label { box-shadow:inset 4px 0 #ef8c9c; }
+  .tier[data-tier="none"] .tier-label { box-shadow:inset 4px 0 #85899a; }
+  .hint { text-align:center; color:#747888; font-size:12px; margin-top:23px; }
+  .toast { position:fixed; bottom:22px; left:50%; transform:translate(-50%, 15px); opacity:0; pointer-events:none; background:#eee9ff; color:#211a32; padding:10px 16px; border-radius:999px; font-size:13px; font-weight:700; transition:.2s; box-shadow:var(--shadow); }
+  .toast.show { opacity:1; transform:translate(-50%,0); }
+  @media (max-width:620px) {
+    .wrap { width:calc(100% - 24px); padding-top:32px; }
+    header { align-items:flex-start; flex-direction:column; gap:14px; }
+    .tier { grid-template-columns:1fr; }
+    .tier-label { padding:13px 16px 11px; border-right:0; border-bottom:1px solid var(--line); flex-direction:row; align-items:baseline; gap:9px; }
+    .tier-label span { margin:0; }
+    .tier-content { min-height:65px; padding:12px; }
+    .composer { padding:10px; }
+    .add-btn { padding:0 16px; }
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">MY MOVIE ARCHIVE</div>
+      <h1>나의 영화 티어리스트</h1>
+      <p class="subtitle">내 취향대로 영화를 분류하고, 나만의 명작 컬렉션을 만들어 보세요.</p>
+    </div>
+    <div class="count-pill" id="totalCount">총 4편의 영화</div>
+  </header>
+
+  <form class="composer" id="addForm">
+    <input id="movieInput" type="text" maxlength="80" placeholder="추가할 영화 제목을 입력하세요" autocomplete="off" aria-label="영화 제목">
+    <button class="add-btn" type="submit">＋ 추가</button>
+  </form>
+
+  <section class="tiers" id="tiers" aria-label="영화 등급 목록">
+    <div class="tier" data-tier="life"><div class="tier-label"><strong>🏆 인생영화</strong><span>다시 봐도 최고의 영화</span></div><div class="tier-content" id="list-life"></div></div>
+    <div class="tier" data-tier="fun"><div class="tier-label"><strong>🔥 꿀잼</strong><span>정말 재미있게 본 영화</span></div><div class="tier-content" id="list-fun"></div></div>
+    <div class="tier" data-tier="okay"><div class="tier-label"><strong>🍿 볼만함</strong><span>가볍게 추천할 만한 영화</span></div><div class="tier-content" id="list-okay"></div></div>
+    <div class="tier" data-tier="bad"><div class="tier-label"><strong>🥱 노잼</strong><span>내 취향은 아니었던 영화</span></div><div class="tier-content" id="list-bad"></div></div>
+    <div class="tier" data-tier="none"><div class="tier-label"><strong>📌 미분류</strong><span>아직 등급을 정하지 않은 영화</span></div><div class="tier-content" id="list-none"></div></div>
+  </section>
+  <p class="hint">영화 등급을 바꾸면 자동으로 저장돼요. 이 브라우저에 데이터가 보관됩니다.</p>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const STORAGE_KEY = "my-movie-tier-list-v1";
+  const tiers = [
+    ["life", "인생영화"], ["fun", "꿀잼"], ["okay", "볼만함"],
+    ["bad", "노잼"], ["none", "미분류"]
+  ];
+  const initialMovies = [
+    { id: 1, title: "인셉션", tier: "none" },
+    { id: 2, title: "기생충", tier: "none" },
+    { id: 3, title: "인터스텔라", tier: "none" },
+    { id: 4, title: "라라랜드", tier: "none" }
+  ];
+  let movies = loadMovies();
+  let nextId = Math.max(0, ...movies.map(movie => Number(movie.id) || 0)) + 1;
+  const $ = id => document.getElementById(id);
+
+  function loadMovies() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved !== null) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed.filter(m => m && typeof m.title === "string" && tiers.some(t => t[0] === m.tier));
+      }
+    } catch (error) {
+      console.warn("저장된 영화 목록을 불러오지 못했습니다.", error);
+    }
+    return initialMovies.map(movie => ({ ...movie }));
+  }
+
+  function saveMovies() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(movies));
+    } catch (error) {
+      showToast("저장에 실패했어요. 브라우저 저장 공간을 확인해 주세요.");
+    }
+  }
+
+  function showToast(message) {
+    const toast = $("toast");
+    toast.textContent = message;
+    toast.classList.add("show");
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => toast.classList.remove("show"), 1900);
+  }
+
+  function render() {
+    tiers.forEach(([tier]) => {
+      const container = $("list-" + tier);
+      container.replaceChildren();
+      const items = movies.filter(movie => movie.tier === tier);
+      if (!items.length) {
+        const empty = document.createElement("span");
+        empty.className = "empty";
+        empty.textContent = "아직 영화가 없어요.";
+        container.append(empty);
+      }
+      items.forEach(movie => {
+        const card = document.createElement("article");
+        card.className = "movie";
+
+        const title = document.createElement("span");
+        title.className = "movie-title";
+        title.textContent = movie.title;
+
+        const actions = document.createElement("div");
+        actions.className = "movie-actions";
+
+        const select = document.createElement("select");
+        select.className = "move-select";
+        select.setAttribute("aria-label", movie.title + " 등급 변경");
+        tiers.forEach(([value, label]) => {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = label;
+          option.selected = movie.tier === value;
+          select.append(option);
+        });
+        select.addEventListener("change", () => moveMovie(movie.id, select.value));
+
+        const remove = document.createElement("button");
+        remove.className = "delete-btn";
+        remove.type = "button";
+        remove.textContent = "×";
+        remove.title = "영화 삭제";
+        remove.setAttribute("aria-label", movie.title + " 삭제");
+        remove.addEventListener("click", () => deleteMovie(movie.id));
+
+        actions.append(select, remove);
+        card.append(title, actions);
+        container.append(card);
+      });
+    });
+    $("totalCount").textContent = `총 ${movies.length}편의 영화`;
+  }
+
+  function moveMovie(id, tier) {
+    const movie = movies.find(item => item.id === id);
+    if (!movie || !tiers.some(item => item[0] === tier)) return;
+    movie.tier = tier;
+    saveMovies();
+    render();
+    showToast(`'${movie.title}' 등급을 변경했어요.`);
+  }
+
+  function deleteMovie(id) {
+    const movie = movies.find(item => item.id === id);
+    if (!movie) return;
+    movies = movies.filter(item => item.id !== id);
+    saveMovies();
+    render();
+    showToast(`'${movie.title}' 영화를 삭제했어요.`);
+  }
+
+  $("addForm").addEventListener("submit", event => {
+    event.preventDefault();
+    const input = $("movieInput");
+    const title = input.value.trim();
+    if (!title) {
+      input.focus();
+      showToast("영화 제목을 입력해 주세요.");
+      return;
+    }
+    movies.push({ id: nextId++, title, tier: "none" });
+    saveMovies();
+    render();
+    input.value = "";
+    input.focus();
+    showToast(`'${title}' 영화를 추가했어요.`);
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
